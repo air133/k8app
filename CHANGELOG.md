@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.14.0] - 2026-06-05
+
+### Added
+- **CronJob** — per-cron tuning knobs, all optional with backward-compatible defaults:
+  - `backoffLimit` (default `6`) — retries before a Job is marked Failed; set `0` for a single Pod per run
+  - `ttlSecondsAfterFinished` — opt-in auto-deletion of finished Jobs (and their Pods)
+  - `concurrencyPolicy` (default `Forbid`), `failedJobsHistoryLimit` (default `10`) and `successfulJobsHistoryLimit` (default `3`) are now read from each cron spec instead of being hardcoded (matches what the README already documented)
+
+### Fixed
+- **CronJob** — with `restartPolicy: Never` the default `backoffLimit` (6) makes a failing Job spawn up to 7 Pods; combined with `failedJobsHistoryLimit` (10) a continuously failing cron piled up dozens of `Error` Pods that could not be tuned from values. Now controllable per-cron.
+- **Cache** — `cache-deployment.yaml` did not set `revisionHistoryLimit`, so it fell back to the Kubernetes default of 10 and accumulated ~10 stale (0-replica) ReplicaSets per service. Pinned to `1` to match the main Deployment template.
+
+### Notes
+- Fully backward compatible: with no new keys set, rendered output is byte-for-byte unchanged. Numeric keys use `dig` (not `default`) so `0` is honored (e.g. `backoffLimit: 0`, which `default` would wrongly turn back into `6`).
+
 ## [3.13.0] - 2026-02-24
 
 ### Added

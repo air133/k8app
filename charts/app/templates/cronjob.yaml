@@ -15,8 +15,9 @@ metadata:
     release: "{{ $root.Release.Name }}"
   name: "{{ $cronJobName }}-{{ $key }}"
 spec:
-  concurrencyPolicy: Forbid
-  failedJobsHistoryLimit: 10
+  # Configurable per-cron; defaults preserve the previous hardcoded behaviour.
+  concurrencyPolicy: {{ $value.concurrencyPolicy | default "Forbid" }}
+  failedJobsHistoryLimit: {{ dig "failedJobsHistoryLimit" 10 $value }}
   jobTemplate:
     metadata:
       name: "{{ $cronJobName }}-{{ $key }}"
@@ -24,6 +25,15 @@ spec:
         helm.sh/chart: "{{$root.Chart.Name}}-{{$root.Chart.Version}}"
         cronjob: "{{ $cronJobName }}"
     spec:
+      # restartPolicy below is "Never", so every retry creates a NEW Pod. With the
+      # Kubernetes default backoffLimit (6) a failing Job leaves up to 7 Error Pods;
+      # combined with failedJobsHistoryLimit this piles up dozens of stale Pods.
+      # Set backoffLimit: 0 for one Pod per run; defaults to 6 (previous behaviour).
+      backoffLimit: {{ dig "backoffLimit" 6 $value }}
+      {{- if hasKey $value "ttlSecondsAfterFinished" }}
+      # Opt-in: let the TTL controller delete finished Jobs (and their Pods).
+      ttlSecondsAfterFinished: {{ $value.ttlSecondsAfterFinished }}
+      {{- end }}
       template:
         spec:
         {{- if $.Values.serviceAccountName }}
@@ -117,7 +127,7 @@ spec:
           terminationGracePeriodSeconds: 30
   schedule: {{ default "1 * * * *" $value.schedule | quote }}
   startingDeadlineSeconds: 300
-  successfulJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: {{ dig "successfulJobsHistoryLimit" 3 $value }}
   suspend: false
   {{- end -}}
 {{- end -}}

@@ -51,6 +51,9 @@ tests:
     asserts:
       - isKind:
           of: Deployment
+      - equal:
+          path: spec.revisionHistoryLimit
+          value: 1
 
   - it: should create cache service
     templates:

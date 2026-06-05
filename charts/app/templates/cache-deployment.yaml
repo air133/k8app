@@ -18,6 +18,10 @@ metadata:
     release: "{{ .Release.Name }}"
 spec:
   replicas: 1
+  # Match the main Deployment template (which pins this to 1). Without it the cache
+  # Deployment falls back to the Kubernetes default of 10, leaving ~10 stale
+  # (0-replica) ReplicaSets per service.
+  revisionHistoryLimit: 1
   selector:
     matchLabels:
       app: {{ $cacheName }}

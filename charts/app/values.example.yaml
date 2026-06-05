@@ -279,6 +279,9 @@ cronjob:
       schedule: "0 2 * * *"
       command: ["./cleanup"]
       args: ["--older-than", "7d"]
+      backoffLimit: 0               # one Pod per run instead of up to 7 on failure
+      ttlSecondsAfterFinished: 600  # auto-delete finished Jobs (and Pods) after 10 minutes
+      failedJobsHistoryLimit: 2
 
 # -----------------------------------------------------------------------------
 # Tolerations & Node Selector

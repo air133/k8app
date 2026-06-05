@@ -263,6 +263,13 @@ cronjob:
   #   command: ["echo"]
   #   args: ["HELLO", "WORLD"]
   #   schedule: "*/2 * * * *"
+  #
+  # Optional per-cron tuning (all backward-compatible; shown with their defaults):
+  #   backoffLimit: 6              # retries before the Job fails; 0 = a single Pod per run
+  #   ttlSecondsAfterFinished: 600 # opt-in: auto-delete finished Jobs (and Pods) after N seconds (unset = keep)
+  #   concurrencyPolicy: Forbid
+  #   failedJobsHistoryLimit: 10
+  #   successfulJobsHistoryLimit: 3
 
 worker:
   # If true, create worker deployments
