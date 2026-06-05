@@ -922,10 +922,18 @@ cronjob:
       concurrencyPolicy: "Forbid"
       successfulJobsHistoryLimit: 5
       failedJobsHistoryLimit: 3
+      backoffLimit: 0               # retries before the Job fails (default 6); 0 = one Pod per run
+      ttlSecondsAfterFinished: 600  # opt-in: delete finished Jobs/Pods after N seconds
       startingDeadlineSeconds: 600  # 10 minutes
       activeDeadlineSeconds: 1800   # 30 minutes
       suspend: false
 ```
+
+> **Retry & cleanup (per-cron, optional).** `backoffLimit`, `ttlSecondsAfterFinished`,
+> `concurrencyPolicy`, `failedJobsHistoryLimit` and `successfulJobsHistoryLimit` are read
+> from each cron spec. Defaults preserve prior behaviour (`6` / unset / `Forbid` / `10` / `3`).
+> With `restartPolicy: Never` every retry creates a new Pod, so a failing cron can pile up
+> `Error` Pods — set `backoffLimit: 0` and/or `ttlSecondsAfterFinished` to keep things tidy.
 
 CronJobs automatically inherit:
 - Environment variables from secrets and configmap

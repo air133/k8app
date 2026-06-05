@@ -75,3 +75,52 @@ tests:
           path: spec.jobTemplate.spec.template.spec.imagePullSecrets
           content:
             name: regsecret
+
+  - it: should use backward-compatible defaults for retry/cleanup
+    set:
+      appName: myapp
+      cronjob:
+        enabled: true
+        spec:
+          default:
+            schedule: "0 * * * *"
+            command: ["./run"]
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.backoffLimit
+          value: 6
+      - equal:
+          path: spec.failedJobsHistoryLimit
+          value: 10
+      - equal:
+          path: spec.successfulJobsHistoryLimit
+          value: 3
+      - notExists:
+          path: spec.jobTemplate.spec.ttlSecondsAfterFinished
+
+  - it: should honor backoffLimit 0 and per-cron history/ttl overrides
+    set:
+      appName: myapp
+      cronjob:
+        enabled: true
+        spec:
+          tuned:
+            schedule: "* * * * *"
+            command: ["./run"]
+            backoffLimit: 0
+            ttlSecondsAfterFinished: 300
+            failedJobsHistoryLimit: 2
+            successfulJobsHistoryLimit: 1
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.backoffLimit
+          value: 0
+      - equal:
+          path: spec.jobTemplate.spec.ttlSecondsAfterFinished
+          value: 300
+      - equal:
+          path: spec.failedJobsHistoryLimit
+          value: 2
+      - equal:
+          path: spec.successfulJobsHistoryLimit
+          value: 1
