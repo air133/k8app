@@ -117,10 +117,32 @@ secretsProvider:
     mount: "secret"           # KV engine mount
     type: "kv-v2"             # kv-v2 recommended
     refreshAfter: "1h"        # Sync interval
+    rolloutRestart: false     # Opt-in: restart workloads on secret change (below)
 
   aws:
     provider: "aws"           # For AWS SSM/Secrets Manager
 ```
+
+#### Rollout Restart on Secret Rotation
+
+Secrets are injected via `envFrom` and read **once at pod startup**: when a value
+rotates in Vault, VSO updates the Kubernetes Secret but running pods keep the old
+values until the next deploy or a manual `kubectl rollout restart`.
+
+Opt-in to automatic restarts with `rolloutRestart: true` — each `VaultStaticSecret`
+then lists the chart's own workloads (the main Deployment and every worker
+Deployment) as `spec.rolloutRestartTargets`, and VSO rollout-restarts them whenever
+the synced secret changes:
+
+```yaml
+secretsProvider:
+  provider: "vault"
+  vault:
+    rolloutRestart: true
+```
+
+> **Tip:** enable it on dev/stage for hands-free rotation; leave it `false` (default)
+> on prod if restarts must stay human-controlled.
 
 #### Supported Providers
 

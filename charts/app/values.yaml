@@ -397,6 +397,13 @@ secretsProvider:
     mount: "secret"           # KV secrets engine mount
     type: "kv-v2"             # Engine type: kv-v2 or kv-v1
     refreshAfter: "1h"        # How often to sync secrets
+    # Opt-in: when a synced secret changes, VSO rollout-restarts the chart's
+    # workloads (the main Deployment and every worker Deployment) so pods pick
+    # up new values — secrets are injected via envFrom and read at startup.
+    # false (default) = current behavior: pods keep old values until the next
+    # deploy or a manual rollout restart. Recommended true on dev/stage; keep
+    # false on prod if restarts must stay human-controlled.
+    rolloutRestart: false
 
   # AWS Secrets Manager settings
   aws:

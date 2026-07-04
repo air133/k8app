@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.15.0] - 2026-07-04
+
+### Added
+- **Job** — optional `job.argocd` block (`hook`, `hookDeletePolicy`, `syncWave`) to control the ArgoCD lifecycle annotations of Jobs. Defaults preserve the historical behavior (`PreSync` / `BeforeHookCreation` / no sync-wave)
+- **Secrets (Vault)** — opt-in `secretsProvider.vault.rolloutRestart` (default `false`): each `VaultStaticSecret` lists the chart's own workloads (main Deployment + every worker Deployment) in `spec.rolloutRestartTargets`, so VSO rollout-restarts them when a synced secret changes
+- Unit tests: 2 new suites (job, vault-static-secret), 10 tests
+
+### Fixed
+- **ArgoCD PreSync deadlock on a fresh cluster** (via the new `job.argocd` knobs): with `secretsProvider.provider: vault` the Job's `envFrom` references a Secret created by a `VaultStaticSecret` — a Sync-phase resource. A `PreSync` hook waits for a Secret that only appears in the Sync phase, so the very first sync never completes. Setting `job.argocd.hook: Sync` + `syncWave: "-1"` runs the Job after the `VaultStaticSecret` while still gating the sync-wave `0` workloads
+- **Stale env after Vault secret rotation** (via `rolloutRestart`): secrets are injected through `envFrom` and read once at pod startup; without restart targets pods kept old values until the next deploy or a manual `kubectl rollout restart`
+
+### Notes
+- Fully backward compatible: with no new keys set, rendered output is byte-for-byte unchanged
+
 ## [3.14.0] - 2026-06-05
 
 ### Added

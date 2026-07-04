@@ -96,6 +96,7 @@ secretsProvider:
     mount: "secret"
     type: "kv-v2"
     refreshAfter: "1h"
+    rolloutRestart: true  # opt-in: VSO restarts the Deployment/workers on secret change
 
 # -----------------------------------------------------------------------------
 # Image Pull Secrets
