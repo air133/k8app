@@ -263,6 +263,12 @@ worker:
 # -----------------------------------------------------------------------------
 job:
   enabled: true
+  # Optional ArgoCD lifecycle override (defaults: PreSync / BeforeHookCreation /
+  # no sync-wave). Use Sync + "-1" when the job consumes Vault-provided secrets —
+  # see the "ArgoCD Hook Configuration" section in README.md.
+  argocd:
+    hook: Sync
+    syncWave: "-1"
   spec:
     migrate-db:
       backoffLimit: 3

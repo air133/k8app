@@ -881,6 +881,31 @@ Jobs automatically inherit:
 - Node selectors and tolerations
 - Image pull secrets
 
+### ArgoCD Hook Configuration
+
+By default Jobs run as an ArgoCD `PreSync` hook (unchanged historical behavior).
+The hook phase, delete policy and sync-wave are configurable:
+
+```yaml
+job:
+  enabled: true
+  argocd:
+    hook: Sync            # default: PreSync
+    syncWave: "-1"        # default: "" (annotation not rendered)
+    # hookDeletePolicy: BeforeHookCreation   (default)
+  spec:
+    migrate:
+      command: ["./migrate"]
+```
+
+> **When to change this.** With `secretsProvider.provider: vault` the Job's
+> `envFrom` references a Secret created by a `VaultStaticSecret` — a **Sync-phase**
+> resource (sync-wave `-2`). A `PreSync` hook waits for a Secret that only appears
+> in the Sync phase, which deadlocks the very first sync on a fresh cluster.
+> Set `hook: Sync` + `syncWave: "-1"` so the Job runs after the VaultStaticSecret
+> but still gates the sync-wave `0` workloads (sync-waves order hooks and regular
+> resources together within the Sync phase).
+
 ---
 
 ## CronJob

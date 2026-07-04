@@ -239,6 +239,18 @@ cache:
 job:
 # If true, create simple jobs, e.g. migration
   enabled: false
+  # ArgoCD lifecycle of the Jobs. Defaults preserve the historical behavior
+  # (PreSync hook, BeforeHookCreation delete policy, no sync-wave).
+  # NOTE: with secretsProvider.provider "vault" the Job's envFrom references a
+  # Secret created by a VaultStaticSecret — a Sync-phase resource (sync-wave "-2").
+  # A PreSync hook then waits for a Secret that only appears in the Sync phase,
+  # which deadlocks the very first sync on a fresh cluster. For that case set
+  # hook: "Sync" and syncWave: "-1" (runs after the VaultStaticSecret, still
+  # before the sync-wave "0" workloads).
+  argocd:
+    hook: PreSync                         # PreSync | Sync | PostSync | Skip
+    hookDeletePolicy: BeforeHookCreation  # BeforeHookCreation | HookSucceeded | HookFailed
+    syncWave: ""                          # e.g. "-1"; empty = annotation not rendered
   spec: {}
   # printenv:
   #   backoffLimit: 1
