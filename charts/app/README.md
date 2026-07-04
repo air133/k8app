@@ -117,10 +117,32 @@ secretsProvider:
     mount: "secret"           # KV engine mount
     type: "kv-v2"             # kv-v2 recommended
     refreshAfter: "1h"        # Sync interval
+    rolloutRestart: false     # Opt-in: restart workloads on secret change (below)
 
   aws:
     provider: "aws"           # For AWS SSM/Secrets Manager
 ```
+
+#### Rollout Restart on Secret Rotation
+
+Secrets are injected via `envFrom` and read **once at pod startup**: when a value
+rotates in Vault, VSO updates the Kubernetes Secret but running pods keep the old
+values until the next deploy or a manual `kubectl rollout restart`.
+
+Opt-in to automatic restarts with `rolloutRestart: true` — each `VaultStaticSecret`
+then lists the chart's own workloads (the main Deployment and every worker
+Deployment) as `spec.rolloutRestartTargets`, and VSO rollout-restarts them whenever
+the synced secret changes:
+
+```yaml
+secretsProvider:
+  provider: "vault"
+  vault:
+    rolloutRestart: true
+```
+
+> **Tip:** enable it on dev/stage for hands-free rotation; leave it `false` (default)
+> on prod if restarts must stay human-controlled.
 
 #### Supported Providers
 
@@ -880,6 +902,31 @@ Jobs automatically inherit:
 - Service account configuration
 - Node selectors and tolerations
 - Image pull secrets
+
+### ArgoCD Hook Configuration
+
+By default Jobs run as an ArgoCD `PreSync` hook (unchanged historical behavior).
+The hook phase, delete policy and sync-wave are configurable:
+
+```yaml
+job:
+  enabled: true
+  argocd:
+    hook: Sync            # default: PreSync
+    syncWave: "-1"        # default: "" (annotation not rendered)
+    # hookDeletePolicy: BeforeHookCreation   (default)
+  spec:
+    migrate:
+      command: ["./migrate"]
+```
+
+> **When to change this.** With `secretsProvider.provider: vault` the Job's
+> `envFrom` references a Secret created by a `VaultStaticSecret` — a **Sync-phase**
+> resource (sync-wave `-2`). A `PreSync` hook waits for a Secret that only appears
+> in the Sync phase, which deadlocks the very first sync on a fresh cluster.
+> Set `hook: Sync` + `syncWave: "-1"` so the Job runs after the VaultStaticSecret
+> but still gates the sync-wave `0` workloads (sync-waves order hooks and regular
+> resources together within the Sync phase).
 
 ---
 

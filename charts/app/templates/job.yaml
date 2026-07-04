@@ -1,6 +1,8 @@
 {{- if .Values.job.enabled -}}
   {{- $appname := printf "%s" (include "name" .) -}}
   {{- $jobName :=  printf "%s-%s" (include "name" .) "job" -}}
+  {{- /* ArgoCD lifecycle knobs; defaults preserve the historical PreSync behavior */ -}}
+  {{- $argocd := .Values.job.argocd | default dict -}}
   {{- range $key, $value := .Values.job.spec }}
 ---
 apiVersion: batch/v1
@@ -8,8 +10,11 @@ kind: Job
 metadata:
   namespace: "{{ $.Release.Namespace }}"
   annotations:
-    argocd.argoproj.io/hook: PreSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/hook: {{ $argocd.hook | default "PreSync" }}
+    argocd.argoproj.io/hook-delete-policy: {{ $argocd.hookDeletePolicy | default "BeforeHookCreation" }}
+    {{- with $argocd.syncWave }}
+    argocd.argoproj.io/sync-wave: {{ . | quote }}
+    {{- end }}
   labels:
     helm.sh/chart: "{{$.Chart.Name}}-{{$.Chart.Version}}"
     job: "{{ $jobName }}"

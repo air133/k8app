@@ -1,0 +1,86 @@
+suite: Job
+templates:
+  - job.yaml
+values:
+  - ../values.yaml
+
+tests:
+  - it: should not render when job is disabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should create one Job per spec entry
+    set:
+      appName: myapp
+      job:
+        enabled: true
+        spec:
+          migrate:
+            command: ["./migrate"]
+          seed:
+            command: ["./seed"]
+    asserts:
+      - hasDocuments:
+          count: 2
+      - isKind:
+          of: Job
+
+  - it: should keep historical ArgoCD annotations by default (PreSync, no sync-wave)
+    set:
+      appName: myapp
+      job:
+        enabled: true
+        spec:
+          migrate:
+            command: ["./migrate"]
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: PreSync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
+          value: BeforeHookCreation
+      - notExists:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+
+  - it: should render configurable hook, delete policy and sync-wave
+    set:
+      appName: myapp
+      job:
+        enabled: true
+        argocd:
+          hook: Sync
+          hookDeletePolicy: HookSucceeded
+          syncWave: "-1"
+        spec:
+          migrate:
+            command: ["./migrate"]
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: Sync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook-delete-policy"]
+          value: HookSucceeded
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "-1"
+
+  - it: should fall back to defaults when argocd block is partially set
+    set:
+      appName: myapp
+      job:
+        enabled: true
+        argocd:
+          syncWave: "-1"
+        spec:
+          migrate:
+            command: ["./migrate"]
+    asserts:
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/hook"]
+          value: PreSync
+      - equal:
+          path: metadata.annotations["argocd.argoproj.io/sync-wave"]
+          value: "-1"
