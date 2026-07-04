@@ -40,5 +40,6 @@ jobs:
 
       - name: Run helm unittest
         run: |
-          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.1.1
+          # --verify=false: helm 4 verifies plugin provenance by default, git sources can't provide it
+          helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.1.1 --verify=false
           helm unittest charts/app
